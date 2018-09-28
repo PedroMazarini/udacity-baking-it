@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Baking it</string>
+    <string name="failed_load">Failed to load recipes</string>
+    <string name="iingredients">Ingredients</string>
+    <string name="steps">Steps</string>
+    <string name="step_">Step</string>
+    <string name="next">NEXT</string>
+    <string name="previous">PREVIOUS</string>
+    <string name="first_step">This is the first step.</string>
+    <string name="last_step">This is the last step.</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
