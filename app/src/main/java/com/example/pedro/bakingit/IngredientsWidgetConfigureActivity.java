@@ -1,6 +1,10 @@
 package com.example.pedro.bakingit;
 
+import android.app.Activity;
+import android.appwidget.AppWidgetManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -13,6 +17,8 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
+import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -20,7 +26,6 @@ import com.google.gson.reflect.TypeToken;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,8 +39,14 @@ import java.util.Scanner;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String>{
+/**
+ * The configuration screen for the {@link IngredientsWidget IngredientsWidget} AppWidget.
+ */
+public class IngredientsWidgetConfigureActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
 
+    private static final String PREFS_NAME = "com.example.pedro.bakingit.IngredientsWidget";
+    private static final String PREF_PREFIX_KEY = "appwidget_";
+    int mAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
 
     private static final int FETCH_LOADER = 221;
     private static final String RECIPE_EXTRA ="recipe_extra" ;
@@ -46,10 +57,53 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     String recipesJSON = "";
     RecipeAdapter recipeAdapter;
 
+    public IngredientsWidgetConfigureActivity() {
+        super();
+    }
+
+    // Write the prefix to the SharedPreferences object for this widget
+    static void saveTitlePref(Context context, int appWidgetId, String jsonRecipe) {
+        SharedPreferences.Editor prefs = context.getSharedPreferences(PREFS_NAME, 0).edit();
+        prefs.putString(PREF_PREFIX_KEY + appWidgetId, jsonRecipe);
+        prefs.apply();
+    }
+
+    // Read the prefix from the SharedPreferences object for this widget.
+    // If there is no preference saved, get the default from a resource
+    static String loadTitlePref(Context context, int appWidgetId) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, 0);
+        String titleValue = prefs.getString(PREF_PREFIX_KEY + appWidgetId, null);
+        if (titleValue != null) {
+            return titleValue;
+        } else {
+            return context.getString(R.string.appwidget_text);
+        }
+    }
+
+    static void deleteTitlePref(Context context, int appWidgetId) {
+        SharedPreferences.Editor prefs = context.getSharedPreferences(PREFS_NAME, 0).edit();
+        prefs.remove(PREF_PREFIX_KEY + appWidgetId);
+        prefs.apply();
+    }
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+    public void onCreate(Bundle icicle) {
+        super.onCreate(icicle);
+        setResult(RESULT_CANCELED);
+        setContentView(R.layout.ingredients_widget_configure);
+        Intent intent = getIntent();
+        Bundle extras = intent.getExtras();
+        if (extras != null) {
+            mAppWidgetId = extras.getInt(
+                    AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
+        }
+
+        // If this activity was started with an intent without an app widget ID, finish with an error.
+        if (mAppWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+            finish();
+            return;
+        }
+
         ButterKnife.bind(this);
         if(isLargerThan600()){
             recyclerRecipes.setLayoutManager(new GridLayoutManager(this,3));
@@ -168,8 +222,22 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     public void callRecipeDetails(Recipe recipe) {
-        Intent intent = new Intent(this, RecipeDetailsActivity.class);
-        intent.putExtra(RECIPE_EXTRA, recipe);
-        startActivity(intent);
+        final Context context = IngredientsWidgetConfigureActivity.this;
+
+        Gson gson = new Gson();
+        String jsonRecipe = gson.toJson(recipe);
+
+        saveTitlePref(context, mAppWidgetId, jsonRecipe);
+
+        // It is the responsibility of the configuration activity to update the app widget
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+        IngredientsWidget.updateAppWidget(context, appWidgetManager, mAppWidgetId);
+
+        // Make sure we pass back the original appWidgetId
+        Intent resultValue = new Intent();
+        resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, mAppWidgetId);
+        setResult(RESULT_OK, resultValue);
+        finish();
     }
 }
+

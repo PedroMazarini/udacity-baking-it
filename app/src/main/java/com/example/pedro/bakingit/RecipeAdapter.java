@@ -1,5 +1,6 @@
 package com.example.pedro.bakingit;
 
+import android.app.Activity;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -19,16 +20,25 @@ public class RecipeAdapter extends  RecyclerView.Adapter<RecipeAdapter.RecipeVie
 
     List<Recipe> recipeList;
     MainActivity mainActivity;
+    IngredientsWidgetConfigureActivity ingredientsWidgetConfigureActivity;
 
-    public RecipeAdapter(MainActivity mainActivity) {
-        this.mainActivity = mainActivity;
+    public RecipeAdapter(Activity activity) {
+        if(activity  instanceof MainActivity)
+            this.mainActivity = (MainActivity) activity;
+        else
+            this.ingredientsWidgetConfigureActivity = (IngredientsWidgetConfigureActivity) activity;
         recipeList = new ArrayList<>();
     }
 
     @NonNull
     @Override
     public RecipeViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
-        View itemView = LayoutInflater.from(mainActivity)
+        View itemView;
+        if(mainActivity != null)
+            itemView = LayoutInflater.from(mainActivity)
+                    .inflate(R.layout.item_recipe, viewGroup, false);
+        else
+            itemView = LayoutInflater.from(ingredientsWidgetConfigureActivity)
                 .inflate(R.layout.item_recipe, viewGroup, false);
         return new RecipeAdapter.RecipeViewHolder(itemView);
     }
@@ -41,7 +51,10 @@ public class RecipeAdapter extends  RecyclerView.Adapter<RecipeAdapter.RecipeVie
         h.recipeLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mainActivity.callRecipeDetails(recipe);
+                if(mainActivity!=null)
+                    mainActivity.callRecipeDetails(recipe);
+                else
+                    ingredientsWidgetConfigureActivity.callRecipeDetails(recipe);
             }
         });
 
