@@ -47,6 +47,8 @@ public class RecipeDetailsActivity extends AppCompatActivity implements RecipeDe
     Recipe recipe;
     int index;
     private SimpleExoPlayer mExoPlayer;
+    private static final String CURRENT_POSITION = "current_position";
+    Long currentPosition = 0L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +62,10 @@ public class RecipeDetailsActivity extends AppCompatActivity implements RecipeDe
             step = extras.getParcelable(STEP_EXTRA);
             index = extras.getInt(STEP_INDEX);
             final RecipeDetailsFragment recipeDetailsFragment = (RecipeDetailsFragment) getSupportFragmentManager().findFragmentById(R.id.master_list_fragment);
+
+            if(savedInstanceState !=null){
+                currentPosition = savedInstanceState.getLong(CURRENT_POSITION);
+            }
 
             if(step == null)
                 step = recipe.getSteps().get(0);
@@ -133,11 +139,34 @@ public class RecipeDetailsActivity extends AppCompatActivity implements RecipeDe
             initializePlayer(Uri.parse(step.getThumbnailURL()));
         }
     }
+
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(mExoPlayer != null)
+            mExoPlayer.release();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if(mExoPlayer != null)
+            mExoPlayer.release();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        if(mExoPlayer != null)
+            outState.putLong(CURRENT_POSITION, mExoPlayer.getCurrentPosition());
+        super.onSaveInstanceState(outState);
+    }
     private void initializePlayer(Uri mediaUri) {
         // Create an instance of the ExoPlayer.
         TrackSelector trackSelector = new DefaultTrackSelector();
         LoadControl loadControl = new DefaultLoadControl();
         mExoPlayer = ExoPlayerFactory.newSimpleInstance(this, trackSelector, loadControl);
+        mExoPlayer.seekTo(currentPosition);
         mPlayerView.setPlayer(mExoPlayer);
         // Prepare the MediaSource.
         String userAgent = Util.getUserAgent(this, "BakeIt");

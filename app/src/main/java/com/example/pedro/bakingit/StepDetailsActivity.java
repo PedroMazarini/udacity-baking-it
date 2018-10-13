@@ -27,6 +27,7 @@ import butterknife.ButterKnife;
 
 public class StepDetailsActivity extends AppCompatActivity {
 
+    private static final String CURRENT_POSITION = "current_position";
     @BindView(R.id.playerView)
     SimpleExoPlayerView mPlayerView;
     @BindView(R.id.txt_step_description)
@@ -45,6 +46,7 @@ public class StepDetailsActivity extends AppCompatActivity {
     Recipe recipe;
     Step step;
     int index;
+    Long currentPosition = 0L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +59,9 @@ public class StepDetailsActivity extends AppCompatActivity {
         step = extras.getParcelable(STEP_EXTRA);
         index = extras.getInt(STEP_INDEX);
 
+        if(savedInstanceState !=null){
+            currentPosition = savedInstanceState.getLong(CURRENT_POSITION);
+        }
         populateStep(step);
         btnClose.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -112,11 +117,30 @@ public class StepDetailsActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mExoPlayer.release();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mExoPlayer.release();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putLong(CURRENT_POSITION, mExoPlayer.getCurrentPosition());
+        super.onSaveInstanceState(outState);
+    }
+
     private void initializePlayer(Uri mediaUri) {
         // Create an instance of the ExoPlayer.
         TrackSelector trackSelector = new DefaultTrackSelector();
         LoadControl loadControl = new DefaultLoadControl();
         mExoPlayer = ExoPlayerFactory.newSimpleInstance(this, trackSelector, loadControl);
+        mExoPlayer.seekTo(currentPosition);
         mPlayerView.setPlayer(mExoPlayer);
         // Prepare the MediaSource.
         String userAgent = Util.getUserAgent(this, "BakeIt");
